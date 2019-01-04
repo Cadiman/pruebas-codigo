@@ -1,0 +1,12 @@
+
+Sub IniciarReportePDF()
+    Dim FileName As Variant
+    Dim Sep As String
+    FileName = Application.GetSaveAsFilename(InitialFileName:=vbNullString, FileFilter:="Acrobat PDF (*.pdf),*.pdf", Title:="Imprimir reporte PDF como")
+    If FileName = False Then
+        'cancela el usuario, salir
+        Exit Sub
+    End If
+    'Debug.Print "FileName: " & FileName,
+    Imprime_Pdf NomArchivo:=CStr(FileName), VerAlGenerar:=True
+End Sub
