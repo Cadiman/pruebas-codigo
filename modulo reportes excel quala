@@ -1,0 +1,107 @@
+Public Sub CreaReporteXML_Lineal()
+'subrutina para usar en el formato simplificado de carga de atl, genera los archivos a partir de una tabla
+'donde la primera columna son los campos y los demas son los datos Y LOS 8 PRIMEROS REGLONES SON LOS DATOS DEL PROYECTO
+
+Dim Nj, K As Long
+Dim mEnc As IXMLDOMProcessingInstruction
+Dim objDOM As DOMDocument
+Dim objXMLRootelement As IXMLDOMElement
+Dim objXMLelement As IXMLDOMElement
+Dim objXMLChildElement As IXMLDOMElement
+Dim objXMLattr As IXMLDOMAttribute
+Dim R_Inicio, R_Nuevo, R_Actual, R_Todo As Range
+Dim J, nK, MrE As Integer
+
+Dim MProy, MMar, MPres, MCont, MCodP As String
+Dim NomCamp, ValCamp As String
+Dim TempFileName, TempIdentFile As String
+ '   TempFileName = MCodP & MProy & MMar & MPres & MCont & Format(Now, "dd-mmm-yy h-mm")
+ MrE = InputBox("numero de reglones de proyecto", reglones, 11)
+
+Set R_Todo = Selection.Cells
+
+'por columnas
+For K = 2 To R_Todo.Columns.Count
+Set objDOM = New DOMDocument
+ TempFileName = ""
+    Set R_Inicio = R_Todo.Cells(1, K)
+
+'POr renglones
+    
+    Set R_Actual = R_Inicio
+    '~~>  create the encoding line
+
+         Set mEnc = objDOM.createProcessingInstruction("xml", "version='1.0' encoding='UTF-8'")
+        objDOM.InsertBefore mEnc, objDOM.DocumentElement
+        Set objXMLRootelement = objDOM.createElement("JOBS")
+       objDOM.appendChild objXMLRootelement
+        Set objXMLelement = objDOM.createElement("DatosProyecto")
+        objXMLRootelement.appendChild objXMLelement
+        'seccion de datos de Proyecto
+         For J = 1 To 5
+            NomCamp = LimpiaNombre(R_Todo.Cells(J, 1).Value)
+            ValCamp = R_Todo.Cells(J, K).Value
+             Set objXMLChildElement = objDOM.createElement(NomCamp)
+             objXMLChildElement.Text = ValCamp  'codigo producto
+            objXMLelement.appendChild objXMLChildElement
+            TempFileName = TempFileName & ValCamp & "-"
+            TempFileName = Left(TempFileName, 100)
+         Next
+         
+         TempIdentFile = TempFileName
+         For J = 6 To MrE - 1
+            NomCamp = LimpiaNombre(R_Todo.Cells(J, 1).Value)
+            ValCamp = R_Todo.Cells(J, K).Value
+             Set objXMLChildElement = objDOM.createElement(NomCamp)
+             objXMLChildElement.Text = ValCamp  'codigo producto
+            objXMLelement.appendChild objXMLChildElement
+            TempIdentFile = TempIdentFile & ValCamp & "-"
+            TempIdentFile = Left(TempIdentFile, 100)
+         Next
+         
+         
+        Set objXMLChildElement = objDOM.createElement("Fecha")
+        objXMLChildElement.Text = "XML: " & TempFileName & " generado el " & Now()
+        objXMLelement.appendChild objXMLChildElement
+        
+        Set objXMLChildElement = objDOM.createElement("DatosGenerado")
+        objXMLChildElement.Text = "Archivo XML para: " & TempIdentFile & " generado el " & Now() & "a partir de: " & ActiveWorkbook.FullName
+        objXMLelement.appendChild objXMLChildElement
+        
+            ' toda la seccion de datos
+        Set objXMLelement = objDOM.createElement("JOB")
+        objXMLRootelement.appendChild objXMLelement
+    
+        For J = MrE + 1 To R_Todo.Rows.Count
+            MNomCampo = LimpiaNombre(R_Todo.Cells(J, 1).Value)
+            MValor = CodificaRetornos(R_Todo.Cells(J, K).Value)
+            If Len(MNomCampo) > 1 Then
+                Set objXMLChildElement = objDOM.createElement(MNomCampo)
+                objXMLChildElement.Text = MValor
+                objXMLelement.appendChild objXMLChildElement
+            End If
+        Next
+        
+   Dim FileName As Variant
+    Dim Sep As String
+    Dim Cancela As Integer
+    FileName = Application.GetSaveAsFilename(InitialFileName:=TempFileName, FileFilter:="Extended MarkUp Language (*.xml),*.xml", Title:="Exportar reporte como")
+    If FileName = False Then
+        'si se cancela iniciar el proceso de salida de la rutina si responde no pasa  a la siguiente referencia
+        Cancela = MsgBox("Guardar todos los archivos juntos (Si) o Cancelar todo (Cancel)", vbYesNoCancel)
+        If Cancela = vbYes Then 'cancela el usuario, salir
+            Exit Sub
+        End If
+    End If
+    
+
+'~~> Saves XML data to a file
+objDOM.Save (FileName)
+Set objDOM = Nothing
+        
+Next
+
+ 
+
+
+End Sub
